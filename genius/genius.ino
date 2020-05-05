@@ -1,4 +1,4 @@
-#include "genius.h" 
+#include "./genius.h" 
 
 // ** Buttons ** //
 
@@ -65,50 +65,6 @@ void TurnOnLed(int led, int turn_on ) {
   digitalWrite(led, turn_on);
 }
 
-// ** Setup ** //
-
-void ConfigPorts() {
-  pinMode(kGreenLed, OUTPUT);
-  pinMode(kBlueLed, OUTPUT);
-  pinMode(kYellowLed, OUTPUT);
-  pinMode(kRedLed, OUTPUT);
-
-  pinMode(kGreenButton, INPUT_PULLUP);
-  pinMode(kRedButton, INPUT_PULLUP);
-  pinMode(kYellowButton, INPUT_PULLUP);
-  pinMode(kBlueButton, INPUT_PULLUP);
-
-}
-
-int RandomNumber() {
-  int rand_number;
-
-  rand_number = random(KAllLedsSize);
-
-  return rand_number;
-}
-
-void ResetToDefault() {
-  for (int i = 0; i < kColorSequenceSize; i++) {
-    color_sequence[i] = -1;
-    input_sequence[i] = -1;
-  }
-
-  state_game = BEGIN;
-  total_colors = 0;
-  inputs_count = 0;
-}
-
-void setup() {
-  randomSeed(analogRead(0));
-  ConfigPorts();
-
-  ResetToDefault();
-  
-  //Serial.begin(9600);
-
-}
-
 // ** BUSSINESS ** //
 
 void AddColorToSequence() {
@@ -142,25 +98,33 @@ int IsInTheColorSequence() {
 }
 
 // ** Run ** //
+void setup() {
+  randomSeed(analogRead(0));
+  ConfigPorts();
+
+  ResetToDefault();
+  
+  Serial.begin(9600);
+}
 
 void loop() {
 
-  if (state_game == BEGIN) {
+  if (state_game == State::init) {
  
     BlinkOneAtTime();
     BlinkAll(2);
 
-    state_game = SHOW_SEQUENCE;
+    state_game = State::blink_sequence;
   }
-  else if (state_game == SHOW_SEQUENCE) {
+  else if (state_game == State::blink_sequence) {
     
     AddColorToSequence();
     ColorSequence();
     BlinkAll(1);
 
-    state_game = INPUT_USER;
+    state_game = State::user_input;
   }
-  else if (state_game == INPUT_USER) {
+  else if (state_game == State::user_input) {
     
     int selected_led = ReadButtons();
 
@@ -173,15 +137,15 @@ void loop() {
       if (total_colors == inputs_count) {
         BlinkAll(1);
 
-        state_game = SHOW_SEQUENCE;
+        state_game = State::blink_sequence;
       }
 
       if (!IsInTheColorSequence()) {
-        state_game = FAIL;
+        state_game = State::finish;
       }
     }
   }
-  else if (state_game == FAIL) {
+  else if (state_game == State::finish) {
     BlinkAll(5);   
     ResetToDefault();
   }
